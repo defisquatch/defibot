@@ -1,0 +1,34 @@
+{
+  "name": "defi",
+  "version": "1.0.0",
+  "description": "coingecko api irc bot for defi and cryptocurrency",
+  "main": "defi.js",
+  "dependencies": {
+    "coingecko-api": "^1.0.10",
+    "irc": "^0.5.2",
+    "irc-colors": "^1.5.0",
+    "sparkly": "^5.0.0",
+    "sqlite3": "^5.0.0",
+    "textspark": "^0.1.0"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/defisquatch/defibot.git"
+  },
+  "keywords": [
+    "coingecko",
+    "irc",
+    "bot",
+    "cryptocurrency"
+  ],
+  "author": "defi squatch",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/defisquatch/defibot/issues"
+  },
+  "homepage": "https://github.com/defisquatch/defibot#readme"
+}
