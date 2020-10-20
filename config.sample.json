@@ -1,0 +1,5 @@
+{
+  "channels": ["#defi"],
+  "server": "irc.yourserver.net",
+  "botName": "defi-bot"
+}

@@ -5,14 +5,9 @@ const CoinGecko = require('coingecko-api');
 //2. Initiate the CoinGecko API Client
 const CoinGeckoClient = new CoinGecko();
 
-const sqlite3 = require('sqlite3').verbose();
+//const sqlite3 = require('sqlite3').verbose();
 
-let db = new sqlite3.Database('./db/coingecko.db', sqlite3.OPEN_READWRITE, (err) => {
-    if (err) {
-        console.error(err.message);
-    }
-    console.log('Connected to the coin database.');
-});
+var db = require('./db.js');
 
 // Create the bot name
 
@@ -28,7 +23,14 @@ var func = async () => {
         id = coin.id;
         symbol = coin.symbol;
         name = coin.name;
-        db.run("INSERT INTO coins(id, symbol, name, icon) VALUES(?, ?, ?, '') WHERE NOT EXISTS (SELECT 1 FROM coins WHERE id = ?) ", id, symbol, name, id);
+        let sql = "INSERT INTO coins(id, symbol, name, icon) SELECT ?, ?, ?, ? WHERE NOT EXISTS (SELECT 1 FROM coins WHERE id = ?) ";
+        let params = [id, symbol, name, '', id];
+        db.run(sql, params, function(err) {
+            if (err) {
+                console.log(err);
+                return console.error(err.message);
+            }
+        });
 
     }
 };

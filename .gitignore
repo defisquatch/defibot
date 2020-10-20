@@ -1,5 +1,5 @@
 db/
 node_modules/
-config.prod.js
-config.test.js
+config.prod.json
+config.test.json
 

@@ -1,34 +1,20 @@
-require('./config.prod.js');
-// Get the lib
-var irc = require("irc");
+//const config = require('./config.prod.json');
+const config = require('./config.test.json');
 
-//1. Import coingecko-api
+var irc = require("irc");
+const c = require('irc-colors');
+const https = require('https');
 const CoinGecko = require('coingecko-api');
 
-//2. Initiate the CoinGecko API Client
+var db = require('./db.js');
+
 const CoinGeckoClient = new CoinGecko();
 
-const https = require('https');
-
-const sqlite3 = require('sqlite3').verbose();
-
-let db = new sqlite3.Database('./db/coingecko.db', sqlite3.OPEN_READWRITE, (err) => {
-    if (err) {
-        console.error(err.message);
-    }
-    console.log('Connected to the coingecko database.');
-});
-
-const c = require('irc-colors');
-
-// Create the bot name
 var bot = new irc.Client(config.server, config.botName, {
     channels: config.channels
 });
 
-// Listen for any message, say to him/her in the room
 bot.addListener("message", function(from, to, text, message) {
-    console.log(from + "|" + to + "|" + text + "|" + message);
     if (text == ".cg trending") {
         showTrending();
     } else if (text == ".cg defi") {
