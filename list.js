@@ -7,7 +7,7 @@ const CoinGeckoClient = new CoinGecko();
 
 //const sqlite3 = require('sqlite3').verbose();
 
-var db = require('./db.js');
+var db = require('/home/dan/code/defi/db.js');
 
 // Create the bot name
 

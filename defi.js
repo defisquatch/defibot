@@ -1,5 +1,5 @@
-//const config = require('./config.prod.json');
-const config = require('./config.test.json');
+const config = require('./config.prod.json');
+//const config = require('./config.test.json');
 
 var irc = require("irc");
 const c = require('irc-colors');
@@ -7,6 +7,8 @@ const https = require('https');
 const CoinGecko = require('coingecko-api');
 
 var db = require('./db.js');
+
+const h = require('./helpers.js');
 
 const CoinGeckoClient = new CoinGecko();
 
@@ -19,7 +21,10 @@ bot.addListener("message", function(from, to, text, message) {
         showTrending();
     } else if (text == ".cg defi") {
         showDefi();
-    } else if (text == ".gas") {
+    } else if (text == ".cg help") {
+        showHelp();
+    }
+    else if (text == ".gas") {
         showGas();
     } else if (text.match(/\.cg +search +(\w+)/)) {
         let command = text.match(/^\.cg search +(\w+)/);
@@ -48,7 +53,7 @@ bot.addListener("message", function(from, to, text, message) {
     } else if (text.match(/\.cg +dev +(\w+)/)) {
         let command = text.match(/^\.cg +dev +(\w+)/);
         if (command[1]) {
-            let sql = "select id, icon from coins where symbol = ?";
+            let sql = "select id, icon from coins where symbol = ? ORDER BY priority DESC";
             let symbol = command[1];
             db.get(sql, symbol, (err, row) => {
                 if (err) {
@@ -63,7 +68,7 @@ bot.addListener("message", function(from, to, text, message) {
     } else if (text.match(/\.cg +icon +(\w+) +(.*)/)) {
         let command = text.match(/^\.cg +icon +(\w+) +(.*)/);
         if (command[1]) {
-            let sql = "select id from coins where symbol = ?";
+            let sql = "select id from coins where symbol = ? ORDER BY priority DESC";
             let symbol = command[1];
             console.log(command[2]);
             let icon = command[2].substring(0, 2);
@@ -82,7 +87,7 @@ bot.addListener("message", function(from, to, text, message) {
     } else if (text.match(/\.cg +links +(\w+)/)) {
         let command = text.match(/^\.cg +links +(\w+)/);
         if (command[1]) {
-            let sql = "select id, icon from coins where symbol = ?";
+            let sql = "select id, icon from coins where symbol = ? ORDER BY priority DESC";
             let symbol = command[1];
             db.get(sql, symbol, (err, row) => {
                 if (err) {
@@ -97,7 +102,7 @@ bot.addListener("message", function(from, to, text, message) {
     } else if (text.match(/\.cg +price +(\w+)/)) {
         let command = text.match(/^\.cg +price +(\w+)/);
         if (command[1]) {
-            let sql = "select id, icon from coins where symbol = ?";
+            let sql = "select id, icon from coins where symbol = ? ORDER BY priority DESC";
             let symbol = command[1];
             db.get(sql, symbol, (err, row) => {
                 if (err) {
@@ -124,7 +129,7 @@ bot.addListener("message", function(from, to, text, message) {
         the_date = day + "-" + month + "-" + year;
         the_date2 = month + "/" + day + "/" + year;
 
-        let sql = "select id from coins where symbol = ?";
+        let sql = "select id from coins where symbol = ? ORDER BY priority DESC";
 
         db.get(sql, symbol, (err, row) => {
             if (err) {
@@ -136,57 +141,27 @@ bot.addListener("message", function(from, to, text, message) {
 
         });
     } else if (text.match(/^\.cg +\w+/)) {
-        let command = text.match(/^\.cg  *(\w*)/);
-        if (command[1]) {
-            let sql = "select id, icon from coins where symbol = ?";
-            let symbol = command[1];
+        let commands_match = text.match(/^\.cg  *([a-zA-Z0-9 ]*)/);
+        let commands = commands_match[1].split(" ");
+        let count = 0;
+        commands.forEach(function (command) {
+            count += 1;
+            if (count < 6) {
+            let sql = "select id, icon from coins where symbol = ? ORDER BY priority DESC";
+            let symbol = command;
             db.get(sql, symbol, (err, row) => {
                 if (err) {
                     return console.error(err.message);
                 }
                 return row ?
-                    showCoin(row.id, row.icon) :
-                    bot.say(config.channels[0], `No coin found with the symbol ${symbol}`);
+                     showCoin(row.id, row.icon) :
+                    console.log(`No coin found with the symbol ${symbol}`);
 
             });
-        } //end command[1]
+            }
+        });
     }
 });
-
-function numberWithCommas(x, add_commas) {
-    if (add_commas) {
-        return x.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
-    } else {
-        return x;
-    }
-}
-
-function colorize(x, text) {
-    if (x > 0) {
-        return c.lime(text);
-    } else if (x < 0) {
-        return c.red(text);
-    } else {
-        return text;
-    }
-}
-
-function abbreviateNumber(num) {
-    fixed = 1;
-    if (num === null) {
-        return null;
-    } // terminate early
-    if (num === 0) {
-        return '0';
-    } // terminate early
-    fixed = (!fixed || fixed < 0) ? 0 : fixed; // number of decimal places to show
-    var b = (num).toPrecision(2).split("e"), // get power
-        k = b.length === 1 ? 0 : Math.floor(Math.min(b[1].slice(1), 14) / 3), // floor at decimals, ceiling at trillions
-        c = k < 1 ? num.toFixed(0 + fixed) : (num / Math.pow(10, k * 3)).toFixed(1 + fixed), // divide by power
-        d = c < 0 ? c : Math.abs(c), // enforce -0 is 0
-        e = d + ['', 'K', 'M', 'B', 'T'][k]; // append power
-    return e;
-}
 
 var showCoin = async (id, icon) => {
     let data = await CoinGeckoClient.coins.fetch(id, {
@@ -213,13 +188,13 @@ var showCoin = async (id, icon) => {
         commas = true;
     }
     name = coin.name;
-    price = numberWithCommas(price.toFixed(dec), commas);
-    ath = numberWithCommas(coin.market_data.ath.usd.toFixed(dec), commas);
+    price = h.numberWithCommas(price.toFixed(dec), commas);
+    ath = h.numberWithCommas(coin.market_data.ath.usd.toFixed(dec), commas);
     cap = coin.market_data.market_cap.usd;
     cap_rank = coin.market_cap_rank;
     vol = coin.market_data.total_volume.usd;
-    high_24h = numberWithCommas(coin.market_data.high_24h.usd.toFixed(dec), commas);
-    low_24h = numberWithCommas(coin.market_data.low_24h.usd.toFixed(dec), commas);
+    high_24h = h.numberWithCommas(coin.market_data.high_24h.usd.toFixed(dec), commas);
+    low_24h = h.numberWithCommas(coin.market_data.low_24h.usd.toFixed(dec), commas);
     price_change_24h = coin.market_data.price_change_percentage_24h.toFixed(2);
     price_change_7d = coin.market_data.price_change_percentage_7d.toFixed(2);
     price_change_30d = coin.market_data.price_change_percentage_30d.toFixed(2);
@@ -232,17 +207,17 @@ var showCoin = async (id, icon) => {
         change = " +" + price_change_24h_currency + " +" + price_change_24h + "%";
     }
 
-    price_change_7d = colorize(price_change_7d, price_change_7d + "%");
-    price_change_30d = colorize(price_change_30d, price_change_30d + "%");
+    price_change_7d = h.colorize(price_change_7d, price_change_7d + "%");
+    price_change_30d = h.colorize(price_change_30d, price_change_30d + "%");
 
     if (cap > 0) {
-        cap_text = "cap: " + abbreviateNumber(cap) + "(#" + cap_rank + ")";
+        cap_text = "cap: " + h.abbreviateNumber(cap) + "(#" + cap_rank + ")";
     } else {
         cap_text = "cap: ?";
     }
 
     if (vol > 0) {
-        vol = abbreviateNumber(vol);
+        vol = h.abbreviateNumber(vol);
     }
 
     if (icon != "") {
@@ -277,11 +252,11 @@ var showCoinPrice = async (id, icon) => {
         commas = true;
     }
     name = coin.name;
-    price = numberWithCommas(price.toFixed(dec), commas);
-    ath = numberWithCommas(coin.market_data.ath.usd.toFixed(dec), commas);
-    atl = numberWithCommas(coin.market_data.atl.usd.toFixed(dec), commas);
-    high_24h = numberWithCommas(coin.market_data.high_24h.usd.toFixed(dec), commas);
-    low_24h = numberWithCommas(coin.market_data.low_24h.usd.toFixed(dec), commas);
+    price = h.numberWithCommas(price.toFixed(dec), commas);
+    ath = h.numberWithCommas(coin.market_data.ath.usd.toFixed(dec), commas);
+    atl = h.numberWithCommas(coin.market_data.atl.usd.toFixed(dec), commas);
+    high_24h = h.numberWithCommas(coin.market_data.high_24h.usd.toFixed(dec), commas);
+    low_24h = h.numberWithCommas(coin.market_data.low_24h.usd.toFixed(dec), commas);
     price_change_1h = coin.market_data.price_change_percentage_1h_in_currency.usd.toFixed(dec);
     price_change_24h = coin.market_data.price_change_percentage_24h.toFixed(2);
     price_change_7d = coin.market_data.price_change_percentage_7d.toFixed(2);
@@ -300,13 +275,13 @@ var showCoinPrice = async (id, icon) => {
     }
 
 
-    price_change_1h = colorize(price_change_1h, price_change_1h + "%");
-    price_change_7d = colorize(price_change_7d, price_change_7d + "%");
-    price_change_14d = colorize(price_change_14d, price_change_14d + "%");
-    price_change_30d = colorize(price_change_30d, price_change_30d + "%");
-    price_change_60d = colorize(price_change_60d, price_change_60d + "%");
-    price_change_200d = colorize(price_change_200d, price_change_200d + "%");
-    price_change_1y = colorize(price_change_1y, price_change_1y + "%");
+    price_change_1h = h.colorize(price_change_1h, price_change_1h + "%");
+    price_change_7d = h.colorize(price_change_7d, price_change_7d + "%");
+    price_change_14d = h.colorize(price_change_14d, price_change_14d + "%");
+    price_change_30d = h.colorize(price_change_30d, price_change_30d + "%");
+    price_change_60d = h.colorize(price_change_60d, price_change_60d + "%");
+    price_change_200d = h.colorize(price_change_200d, price_change_200d + "%");
+    price_change_1y = h.colorize(price_change_1y, price_change_1y + "%");
     if (icon != "") {
         name = name + " " + icon;
     }
@@ -325,17 +300,17 @@ var showCoinHistory = async (id, the_date, the_date2) => {
     //      console.log(data.data);
     coin = data.data;
     name = coin.name;
-    price = numberWithCommas(coin.market_data.current_price.usd.toFixed(3));
+    price = h.numberWithCommas(coin.market_data.current_price.usd.toFixed(3));
     cap = coin.market_data.market_cap.usd;
     vol = coin.market_data.total_volume.usd;
     if (cap > 0) {
-        cap_text = "cap: " + abbreviateNumber(cap);
+        cap_text = "cap: " + h.abbreviateNumber(cap);
     } else {
         cap_text = "cap: ?";
     }
 
     if (vol > 0) {
-        vol = abbreviateNumber(vol);
+        vol = h.abbreviateNumber(vol);
     }
 
     bot.say(config.channels[0], c.bold(name) + " on " + the_date2 + ": $" + price + " |  vol: " + vol + " | " + cap_text);
@@ -403,11 +378,11 @@ function showDefi() {
             try {
                 let json = JSON.parse(body);
                 defi = json.data;
-                defi_cap = abbreviateNumber(parseFloat(defi.defi_market_cap));
+                defi_cap = h.abbreviateNumber(parseFloat(defi.defi_market_cap));
                 defi_ratio = parseFloat(defi.defi_to_eth_ratio).toFixed(2);
-                eth_cap = abbreviateNumber(parseFloat(defi.eth_market_cap));
+                eth_cap = h.abbreviateNumber(parseFloat(defi.eth_market_cap));
                 defi_dom = parseFloat(defi.defi_dominance).toFixed(2);
-                defi_vol = abbreviateNumber(parseFloat(defi.trading_volume_24h));
+                defi_vol = h.abbreviateNumber(parseFloat(defi.trading_volume_24h));
                 defi_top = defi.top_coin_name;
                 defi_top_dom = parseFloat(defi.top_coin_defi_dominance).toFixed(2);
                 msg = "Defi cap: " + c.bold(defi_cap) + " (" + defi_ratio + "% of " + eth_cap + " Eth cap) - " + defi_dom + "% overall | " + defi_vol + " vol | Top Coin: " + defi.top_coin_name + " (" + defi_top_dom + "% defi dominance)";
@@ -522,3 +497,8 @@ var showCoinLinks = async (id, icon) => {
 
     bot.say(config.channels[0], msg);
 };
+
+function showHelp() {
+    msg = ".cg <coin> | .cg search <search term> | .cg mm/dd/yyyy <coin> | .cg id <id> |  .cg price <coin> | .cg links <coin> | .cg dev <coin> | .cg icon <coin> <emoji> | .cg trending | .cg defi | .gas";
+    bot.say(config.channels[0], msg);
+}
