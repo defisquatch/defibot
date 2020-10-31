@@ -4,6 +4,7 @@
   "description": "coingecko api irc bot for defi and cryptocurrency",
   "main": "defi.js",
   "dependencies": {
+    "@uniswap/sdk": "^3.0.3",
     "coingecko-api": "^1.0.10",
     "irc": "^0.5.2",
     "irc-colors": "^1.5.0",
